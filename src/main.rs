@@ -100,7 +100,7 @@ impl ProcessorInfo {
         self
     }
 
-    fn detect_arm_type(&self) -> String {
+    fn detect_arm_type(&mut self) -> String {
         #[cfg(target_os = "macos")]
         {
             if let Ok(output) = Command::new("sysctl")
@@ -374,10 +374,14 @@ impl ProcessorInfo {
         Ok(())
     }
 
-    fn display(&self) -> String {
+    fn display(&mut self) -> String {
         let mut result = Vec::new();
 
-        result.push(format!("Architecture: {}", self.architecture));
+        result.push(format!(
+            "Architecture: {} - {}",
+            self.architecture,
+            env::consts::ARCH.to_string()
+        ));
 
         if !self.model_name.is_empty() {
             result.push(format!("CPU Model: {}", self.model_name));
