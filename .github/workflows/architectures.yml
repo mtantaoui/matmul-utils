@@ -45,7 +45,7 @@ jobs:
           rustup default stable
 
       - name: Install QEMU for ARM emulation
-        if: matrix.arch == 'armv7' || matrix.arch == 'aarch64'
+        if: matrix.arch == 'armv7'
         run: |
           sudo apt update
           sudo apt install -y qemu-user-static
