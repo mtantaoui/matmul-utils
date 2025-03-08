@@ -2,9 +2,9 @@ name: Run Rust Script on Multiple Architectures
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
   workflow_dispatch:
 
 jobs:
@@ -44,28 +44,23 @@ jobs:
           source $HOME/.cargo/env
           rustup default stable
 
-      - name: Install cross-compilation tools
-        if: matrix.arch != 'x86_64'
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: cross
-
-      - name: Run script (native architecture)
-        if: matrix.arch == 'x86_64'
+      - name: Install QEMU for ARM emulation
+        if: matrix.arch == 'armv7' || matrix.arch == 'aarch64'
         run: |
-          cargo run --release
-          # If your script is standalone and not a Cargo project:
-          # rustc path/to/your_script.rs -o run_script
-          # ./run_script
+          sudo apt update
+          sudo apt install -y qemu-user-static
 
-      - name: Run script (non-native architecture)
+      - name: Install `cross` for cross-compilation
         if: matrix.arch != 'x86_64'
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: run
-          args: --release --target ${{ matrix.arch }}-${{ contains(matrix.os, 'ubuntu') && 'unknown-linux-gnu' || contains(matrix.os, 'macos') && 'apple-darwin' || 'pc-windows-msvc' }}
+        run: cargo install cross
+
+      - name: Run script (x86_64)
+        if: matrix.arch == 'x86_64'
+        run: cargo run --release
+
+      - name: Run script using `cross` (ARM architectures)
+        if: matrix.arch != 'x86_64'
+        run: cross run --release --target ${{ matrix.arch }}-unknown-linux-gnu
 
       - name: Capture and display output
         run: |
