@@ -28,13 +28,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-          target: ${{ matrix.arch != 'x86_64' && format('{0}-{1}-{2}', matrix.arch, contains(matrix.os, 'ubuntu') && 'unknown-linux' || contains(matrix.os, 'macos') && 'apple-darwin' || 'pc-windows-msvc', '') || '' }}
+      - name: Install Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          source $HOME/.cargo/env
+          rustup default stable
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
       - name: Install cross-compilation tools
         if: matrix.arch != 'x86_64'
