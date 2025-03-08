@@ -28,12 +28,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Rust
+      - name: Set up Rust on Windows
+        if: runner.os == 'Windows'
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Set up Rust on Linux/macOS
+        if: runner.os != 'Windows'
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
           source $HOME/.cargo/env
           rustup default stable
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
       - name: Install cross-compilation tools
         if: matrix.arch != 'x86_64'
