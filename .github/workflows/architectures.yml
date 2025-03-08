@@ -1,0 +1,67 @@
+name: Run Rust Script on Multiple Architectures
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  run-script:
+    name: Run on ${{ matrix.os }}-${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        arch: [x86_64]
+        include:
+          - os: ubuntu-latest
+            arch: aarch64
+          - os: ubuntu-latest
+            arch: armv7
+          - os: macos-latest
+            arch: aarch64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          target: ${{ matrix.arch != 'x86_64' && format('{0}-{1}-{2}', matrix.arch, contains(matrix.os, 'ubuntu') && 'unknown-linux' || contains(matrix.os, 'macos') && 'apple-darwin' || 'pc-windows-msvc', '') || '' }}
+
+      - name: Install cross-compilation tools
+        if: matrix.arch != 'x86_64'
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: cross
+
+      - name: Run script (native architecture)
+        if: matrix.arch == 'x86_64'
+        run: |
+          cargo run --release
+          # If your script is standalone and not a Cargo project:
+          # rustc path/to/your_script.rs -o run_script
+          # ./run_script
+
+      - name: Run script (non-native architecture)
+        if: matrix.arch != 'x86_64'
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: run
+          args: --release --target ${{ matrix.arch }}-${{ contains(matrix.os, 'ubuntu') && 'unknown-linux-gnu' || contains(matrix.os, 'macos') && 'apple-darwin' || 'pc-windows-msvc' }}
+
+      - name: Capture and display output
+        run: |
+          echo "::group::Script Execution Results"
+          echo "Architecture: ${{ matrix.arch }}"
+          echo "Operating System: ${{ matrix.os }}"
+          echo "::endgroup::"
